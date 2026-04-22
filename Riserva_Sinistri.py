@@ -78,8 +78,12 @@ with tab_input:
             ],
         }
 
+
+        if st.button("Carica demo"):
+    st.session_state.triangolo = DEMO[n_anni]
         if modalita == "Demo precaricato" and n_anni in DEMO:
             default_data = DEMO[n_anni]
+            
         elif modalita == "Demo precaricato":
             # Genera demo casuale
             rng = np.random.default_rng(0)
