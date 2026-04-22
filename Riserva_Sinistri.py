@@ -52,13 +52,6 @@ with tab_input:
     """)
 
 
-
-    key_tabella = f"triangolo_{modalita}_{n_anni}"
-
-    st.data_editor(
-        default_data,
-        key=key_tabella
-    )
     c1, c2 = st.columns([1, 3])
     with c1:
         n_anni = st.slider("N° anni (dimensione triangolo)", 3, 8, 5)
@@ -109,6 +102,13 @@ with tab_input:
         else:
             default_data = [[None] * n_anni for _ in range(n_anni)]
 
+        key_tabella = f"triangolo_{modalita}_{n_anni}"
+
+        st.data_editor(
+            default_data,
+            key=key_tabella
+        )
+        
         st.markdown("**Inserisci il triangolo cumulato (€)**")
         header_cols = st.columns([1] + [1] * n_anni)
         header_cols[0].markdown("**Anno Acc. \\ Svil.**")
