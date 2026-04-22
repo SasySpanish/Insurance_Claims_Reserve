@@ -746,7 +746,7 @@ with tab_co:
         default_case = DEMO_CASE.get(n, [[None] * n for _ in range(n)])
 
         case_data = render_triangle_input("case", n, anni, default_case,
-                                           "Case Outstanding (€)")
+                                           "Case Outstanding (€)", modalita)
 
         tipo_media_co = st.selectbox(
             "Tipo di media ratios",
