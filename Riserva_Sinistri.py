@@ -92,7 +92,7 @@ with tab_input:
             base = rng.integers(150_000, 300_000, n_anni)
             default_data = []
             for i in range(n_anni):
-                row = [np.nan] * n_anni
+                row = [None] * n_anni
                 for j in range(n_anni - i):
                     factor = 1 + 0.55 * (j == 0) + 0.12 * (j == 1) + 0.05 * (j >= 2)
                     row[j] = float(base[i]) * (1.0 + sum(
@@ -101,13 +101,6 @@ with tab_input:
                 default_data.append(row)
         else:
             default_data = [[None] * n_anni for _ in range(n_anni)]
-
-        key_tabella = f"triangolo_{modalita}_{n_anni}"
-
-        st.data_editor(
-            default_data,
-            key=key_tabella
-        )
         
         st.markdown("**Inserisci il triangolo cumulato (€)**")
         header_cols = st.columns([1] + [1] * n_anni)
@@ -131,7 +124,7 @@ with tab_input:
                         "", min_value=0.0,
                         value=float(default_val) if not (isinstance(default_val, float) and np.isnan(default_val)) else 0.0,
                         step=1000.0, format="%.0f",
-                        key=f"tri_{i}_{j}",
+                        key=f"tri_{modalita}_{i}_{j}",
                         label_visibility="collapsed",
                         disabled=is_future,
                     )
