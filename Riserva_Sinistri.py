@@ -209,7 +209,7 @@ def invalidate_results():
 
 
 def render_triangle_input(key_prefix: str, n: int, anni_label: list,
-                           default_data: list, label: str, modalita) -> list:
+                           default_data: list, label: str, modalita:str) -> list:
     """Renderizza l'input di un triangolo generico."""
     st.markdown(f"**{label}**")
     header_cols = st.columns([1] + [1] * n)
@@ -322,7 +322,7 @@ with tab_input:
             default_data = [[None] * n_anni for _ in range(n_anni)]
 
         triangle_data = render_triangle_input("tri", n_anni, anni_label, default_data,
-                                               "Pagamenti cumulati (€)" 
+                                               "Pagamenti cumulati (€)"modalita 
                                                )
 
         if st.button("💾 Salva triangolo", type="primary"):
