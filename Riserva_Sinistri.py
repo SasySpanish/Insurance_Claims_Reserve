@@ -86,7 +86,7 @@ with tab_input:
             base = rng.integers(150_000, 300_000, n_anni)
             default_data = []
             for i in range(n_anni):
-                row = [None] * n_anni
+                row = [np.nan] * n_anni
                 for j in range(n_anni - i):
                     factor = 1 + 0.55 * (j == 0) + 0.12 * (j == 1) + 0.05 * (j >= 2)
                     row[j] = float(base[i]) * (1.0 + sum(
