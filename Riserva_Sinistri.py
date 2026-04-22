@@ -179,8 +179,18 @@ hr { border-color: rgba(128, 203, 196, 0.15) !important; }
 """, unsafe_allow_html=True)
 
 # ── COLORI PLOTLY ──────────────────────────────────────────────────────────────
-PALETTE = ["#76b7b0", "#4db6ac", "#26a69a", "#00897b", "#00695c",
-           "#b2dfdb", "#e0f2f1", "#26c6da", "#0097a7", "#006064"]
+PALETTE = [
+    "#4E79A7",  # blu
+    "#F28E2B",  # arancione
+    "#E15759",  # rosso
+    "#76B7B2",  # teal (mantieni il tuo stile)
+    "#59A14F",  # verde
+    "#EDC948",  # giallo
+    "#B07AA1",  # viola
+    "#FF9DA7",  # rosa
+    "#9C755F",  # marrone
+    "#BAB0AC"   # grigio
+]
 PLOTLY_LAYOUT = dict(
     plot_bgcolor="rgba(0,0,0,0)",
     paper_bgcolor="rgba(0,0,0,0)",
