@@ -661,7 +661,7 @@ with tab_acpc:
         anni_label = st.session_state["anni_label"]
         default_counts = [[None] * n for _ in range(n)]
         count_data = render_triangle_input("cnt", n, anni_label, default_counts,
-                                            "Conteggi cumulati (n° sinistri)")
+                                            "Conteggi cumulati (n° sinistri)", modalita)
         if st.button("📊 Stima IBNR da conteggi", type="primary"):
             cnt_tri = build_triangle_from_session(count_data, n)
             n_sin_acpc_arr = stima_conteggi_da_triangolo(cnt_tri)
