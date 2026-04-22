@@ -269,6 +269,7 @@ with tab_input:
     Le celle grigie (diagonale superiore destra) rappresentano dati futuri.
     """)
 
+
     c1, c2 = st.columns([1, 3])
     with c1:
         n_anni = st.slider("Dimensione triangolo", 3, 8, 5, on_change=invalidate_results)
@@ -296,8 +297,13 @@ with tab_input:
             ],
         }
 
+
+      
+
+    
         if modalita == "Demo precaricato" and n_anni in DEMO:
             default_data = DEMO[n_anni]
+            
         elif modalita == "Demo precaricato":
             rng = np.random.default_rng(42)
             base = rng.integers(150_000, 300_000, n_anni)
