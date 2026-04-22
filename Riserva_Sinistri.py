@@ -52,13 +52,13 @@ with tab_input:
     """)
 
 
-key_tabella = f"triangolo_{modalita}_{n_anni}"
 
-st.data_editor(
-    default_data,
-    key=key_tabella
-)
-    
+    key_tabella = f"triangolo_{modalita}_{n_anni}"
+
+    st.data_editor(
+        default_data,
+        key=key_tabella
+    )
     c1, c2 = st.columns([1, 3])
     with c1:
         n_anni = st.slider("N° anni (dimensione triangolo)", 3, 8, 5)
