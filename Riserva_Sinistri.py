@@ -179,7 +179,7 @@ hr { border-color: rgba(128, 203, 196, 0.15) !important; }
 """, unsafe_allow_html=True)
 
 # ── COLORI PLOTLY ──────────────────────────────────────────────────────────────
-PALETTE = ["#80cbc4", "#4db6ac", "#26a69a", "#00897b", "#00695c",
+PALETTE = ["#76b7b0", "#4db6ac", "#26a69a", "#00897b", "#00695c",
            "#b2dfdb", "#e0f2f1", "#26c6da", "#0097a7", "#006064"]
 PLOTLY_LAYOUT = dict(
     plot_bgcolor="rgba(0,0,0,0)",
@@ -213,7 +213,7 @@ def render_triangle_input(key_prefix: str, n: int, anni_label: list,
     """Renderizza l'input di un triangolo generico."""
     st.markdown(f"**{label}**")
     header_cols = st.columns([1] + [1] * n)
-    header_cols[0].markdown("**Anno \\ Svil.**")
+    header_cols[0].markdown("**Anno \\ Sviluppo**")
     for j in range(n):
         header_cols[j + 1].markdown(f"**+{j}**")
 
@@ -243,18 +243,18 @@ def render_triangle_input(key_prefix: str, n: int, anni_label: list,
 
 
 # ── HEADER ────────────────────────────────────────────────────────────────────
-st.title("📐 Riserva Sinistri")
+st.title("Δ Riserva Sinistri Δ")
 st.caption("Stima IBNR · Chain Ladder · Bornhuetter-Ferguson · Cape Cod · Case Outstanding · Evaluation")
 
 # ── TABS ──────────────────────────────────────────────────────────────────────
 tabs = st.tabs([
-    "📥 Triangolo",
-    "⛓️ Chain Ladder",
-    "📊 Bornhuetter-Ferguson",
-    "🎣 Cape Cod",
-    "🔢 Avg Cost/Claim",
-    "🏛️ Case Outstanding",
-    "🔍 Evaluation",
+    "Δ Triangolo",
+    "Δ Chain Ladder",
+    "Δ Bornhuetter-Ferguson",
+    "Δ Cape Cod",
+    "Δ Avg Cost/Claim",
+    "Δ Case Outstanding",
+    "Δ Evaluation",
 ])
 tab_input, tab_cl, tab_bf, tab_cc, tab_acpc, tab_co, tab_eval = tabs
 
@@ -265,7 +265,7 @@ tab_input, tab_cl, tab_bf, tab_cc, tab_acpc, tab_co, tab_eval = tabs
 with tab_input:
     st.subheader("Triangolo dei Pagamenti Cumulati")
     st.markdown("""
-    Inserisci i **pagamenti cumulati** per anno di accadimento × anno di sviluppo.
+    Inserisci i **pagamenti cumulati** per anno di accadimento e anno di sviluppo.
     """)
 
 
@@ -277,7 +277,7 @@ with tab_input:
         anni_label = [str(int(anno_base) + i) for i in range(n_anni)]
 
         st.divider()
-        modalita = st.radio("Modalità inserimento", ["Manuale", "Demo precaricato"],
+        modalita = st.radio("Input", ["Manuale", "Preimpostato"],
                             label_visibility="visible")
 
     with c2:
@@ -300,10 +300,10 @@ with tab_input:
       
 
     
-        if modalita == "Demo precaricato" and n_anni in DEMO:
+        if modalita == "Preimpostato" and n_anni in DEMO:
             default_data = DEMO[n_anni]
             
-        elif modalita == "Demo precaricato":
+        elif modalita == "Preimpostato":
             rng = np.random.default_rng(42)
             base = rng.integers(150_000, 300_000, n_anni)
             default_data = []
@@ -349,7 +349,7 @@ with tab_input:
 
     if "triangle" in st.session_state:
         st.divider()
-        st.subheader("🔥 Heatmap Triangolo")
+        st.subheader("Heatmap Triangolo")
         tri_df = pd.DataFrame(
             st.session_state["triangle"],
             index=st.session_state["anni_label"],
@@ -374,7 +374,7 @@ with tab_input:
 # TAB 2 – CHAIN LADDER
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_cl:
-    st.subheader("⛓️ Chain Ladder")
+    st.subheader("Δ Chain Ladder Δ")
     st.markdown("""
     Proietta i pagamenti futuri moltiplicando i valori della diagonale attuale
     per i **fattori di sviluppo età-età**. L'assunzione chiave è che lo sviluppo
@@ -473,7 +473,7 @@ with tab_cl:
 # TAB 3 – BORNHUETTER-FERGUSON
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_bf:
-    st.subheader("📊 Bornhuetter-Ferguson")
+    st.subheader("Δ Bornhuetter-Ferguson Δ")
     st.markdown("""
     Credibility blend tra chain ladder (peso = % sviluppato) e perdita attesa a priori
     (peso = % non ancora sviluppato). Più stabile del CL per anni immaturi.
@@ -560,7 +560,7 @@ with tab_bf:
 # TAB 4 – CAPE COD
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_cc:
-    st.subheader("🎣 Cape Cod")
+    st.subheader("Δ Cape Cod Δ")
     st.markdown("""
     Come il BF, ma l'ELR è **stimato dai dati stessi** invece che selezionato a priori.
     ELR = Σ pagati / Σ (premi × % sviluppato). Rimuove la soggettività nella scelta del LR.
@@ -631,7 +631,7 @@ with tab_cc:
 # TAB 5 – AVERAGE COST PER CLAIM
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_acpc:
-    st.subheader("🔢 Average Cost per Claim (ACPC)")
+    st.subheader("Δ Average Cost per Claim (ACPC) Δ")
     st.markdown("""
     Riserva = N° sinistri IBNR × Costo Medio (con eventuale inflazione).
     Il numero di sinistri IBNR può essere inserito manualmente o **stimato dal
@@ -811,7 +811,7 @@ with tab_co:
 # TAB 7 – EVALUATION
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_eval:
-    st.subheader("🔍 Evaluation & Back-test")
+    st.subheader("Δ Evaluation & Back-test Δ")
 
     if "triangle" not in st.session_state:
         st.warning("⚠️ Prima inserisci e salva il triangolo nella tab **Triangolo**.")
@@ -821,7 +821,7 @@ with tab_eval:
         n = st.session_state["n_anni"]
 
         # ── Confronto metodi eseguiti ─────────────────────────────────────────
-        st.markdown("### 📊 Confronto metodi eseguiti")
+        st.markdown("### Confronto metodi eseguiti")
         METHOD_KEYS = [
             ("res_cl", "Chain Ladder"),
             ("res_bf", "Bornhuetter-Ferguson"),
@@ -901,7 +901,7 @@ with tab_eval:
                 spread_pct = spread / max(vals) * 100
                 colore = "warning-box" if spread_pct > 20 else "diagnostic-box"
                 st.markdown(f"""<div class="{colore}">
-                📏 <strong>Range di stima:</strong> € {min(vals):,.0f} — € {max(vals):,.0f}
+                <strong>Range di stima:</strong> € {min(vals):,.0f} — € {max(vals):,.0f}
                 &nbsp;|&nbsp; Spread: € {spread:,.0f} ({spread_pct:.1f}% del massimo)<br>
                 {'⚠️ Spread elevato: le metodologie divergono significativamente. Analizzare le cause prima di selezionare la stima finale.' if spread_pct > 20 else '✅ Le stime sono ragionevolmente coerenti tra loro.'}
                 </div>""", unsafe_allow_html=True)
