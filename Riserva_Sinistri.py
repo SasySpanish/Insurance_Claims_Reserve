@@ -209,7 +209,7 @@ def invalidate_results():
 
 
 def render_triangle_input(key_prefix: str, n: int, anni_label: list,
-                           default_data: list, label: str) -> list:
+                           default_data: list, label: str, modalita) -> list:
     """Renderizza l'input di un triangolo generico."""
     st.markdown(f"**{label}**")
     header_cols = st.columns([1] + [1] * n)
@@ -233,7 +233,7 @@ def render_triangle_input(key_prefix: str, n: int, anni_label: list,
                 val = row_cols[j + 1].number_input(
                     "", min_value=0.0, value=default_val,
                     step=1000.0, format="%.0f",
-                    key=f"{key_prefix}_{i}_{j}",
+                    key=f"{key_prefix}_{modalita}_{n}_{i}_{j}",
                     label_visibility="collapsed",
                     disabled=is_future,
                 )
