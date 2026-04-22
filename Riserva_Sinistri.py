@@ -51,6 +51,14 @@ with tab_input:
     Le celle grigie (diagonale superiore destra) sono dati futuri — non compilarle.
     """)
 
+
+key_tabella = f"triangolo_{modalita}_{n_anni}"
+
+st.data_editor(
+    default_data,
+    key=key_tabella
+)
+    
     c1, c2 = st.columns([1, 3])
     with c1:
         n_anni = st.slider("N° anni (dimensione triangolo)", 3, 8, 5)
@@ -79,8 +87,9 @@ with tab_input:
         }
 
 
-        if st.button("Carica demo"):
-    st.session_state.triangolo = DEMO[n_anni]
+      
+
+    
         if modalita == "Demo precaricato" and n_anni in DEMO:
             default_data = DEMO[n_anni]
             
