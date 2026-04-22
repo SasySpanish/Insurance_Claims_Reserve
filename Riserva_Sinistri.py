@@ -403,8 +403,7 @@ with tab_cl:
             index=anni,
             columns=[f"{j}→{j+1}" for j in range(n - 1)],
         )
-        st.dataframe(ldf_df.style.format("{:.4f}", na_rep="—").background_gradient(
-            cmap="YlGn", axis=None), use_container_width=True)
+        st.dataframe(ldf_df.style.format("{:.4f}", na_rep="—"), use_container_width=True)
 
         st.markdown("**Selezione fattori età-età** (modifica per override manuale)")
         factor_cols = st.columns(n - 1)
