@@ -266,7 +266,6 @@ with tab_input:
     st.subheader("Triangolo dei Pagamenti Cumulati")
     st.markdown("""
     Inserisci i **pagamenti cumulati** per anno di accadimento × anno di sviluppo.
-    Le celle grigie (diagonale superiore destra) rappresentano dati futuri.
     """)
 
 
@@ -323,7 +322,7 @@ with tab_input:
             default_data = [[None] * n_anni for _ in range(n_anni)]
 
         triangle_data = render_triangle_input("tri", n_anni, anni_label, default_data,
-                                               "Pagamenti cumulati (€)")
+                                               "Pagamenti cumulati (€)", modalita)
 
         if st.button("💾 Salva triangolo", type="primary"):
             tri_array = build_triangle_from_session(triangle_data, n_anni)
