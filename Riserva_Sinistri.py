@@ -321,9 +321,7 @@ with tab_input:
         else:
             default_data = [[None] * n_anni for _ in range(n_anni)]
 
-        triangle_data = render_triangle_input("tri", n_anni, anni_label, default_data,
-                                               "Pagamenti cumulati (€)", modalita 
-                                               )
+
         triangle_data = render_triangle_input(
                  "tri",
                  n_anni,
