@@ -31,7 +31,7 @@ from utils.riserva_sinistri import (
 )
 
 # ── CONFIGURAZIONE PAGINA ──────────────────────────────────────────────────────
-st.set_page_config(page_title="Riserva Sinistri", page_icon="📐", layout="wide")
+st.set_page_config(page_title="Riserva Sinistri", page_icon="⧩", layout="wide")
 
 # ── STILE GLOBALE ─────────────────────────────────────────────────────────────
 st.markdown("""
@@ -184,7 +184,7 @@ PALETTE = [
     "#4E79A7",  # blu
     "#F28E2B",  # arancione
     "#E15759",  # rosso
-    "#76B7B2",  # teal (mantieni il tuo stile)
+    "#76B7B2",  # teal 
     "#59A14F",  # verde
     "#EDC948",  # giallo
     "#B07AA1",  # viola
@@ -254,19 +254,19 @@ def render_triangle_input(key_prefix: str, n: int, anni_label: list,
 
 
 # ── HEADER ────────────────────────────────────────────────────────────────────
-st.title("Δ Riserva Sinistri Δ")
-st.caption("Stima IBNR · Chain Ladder · Bornhuetter-Ferguson · Cape Cod · Case Outstanding · Evaluation")
+st.title("⧨ Riserva Sinistri ⧩")
+st.caption("Stima IBNR · Chain Ladder · Bornhuetter-Ferguson · Cape Cod · Frequency-Severity · Case Outstanding · Evaluation & Backtest")
 
 # ── TABS ──────────────────────────────────────────────────────────────────────
 tabs = st.tabs([
-    "🔋 Triangolo",
+    "✔️🟢 **Triangolo** ",
     "🟢 Chain Ladder",
     "🟢 Bornhuetter-Ferguson",
     "🟢 Cape Cod",
     "🟢 Avg Cost/Claim",
     "🟢 Frequency-Severity",
     "🟢 Case Outstanding",
-    "🟢 Evaluation 🔋",
+    "🟢 Evaluation ✔️",
 ])
 tab_input, tab_cl, tab_bf, tab_cc, tab_acpc, tab_fs, tab_co, tab_eval = tabs
 
