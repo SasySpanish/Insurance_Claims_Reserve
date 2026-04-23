@@ -959,6 +959,7 @@ with tab_eval:
             ("res_bf", "Bornhuetter-Ferguson"),
             ("res_cc", "Cape Cod"),
             ("res_acpc", "Average Cost per Claim"),
+            ("res_fs", "Frequency-Severity"),
             ("res_co", "Case Outstanding"),
         ]
         risultati = []
