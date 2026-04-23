@@ -770,7 +770,7 @@ with tab_fs:
         }
         default_counts = DEMO_COUNTS.get(n, [[None] * n for _ in range(n)])
         count_data = render_triangle_input("fs_cnt", n, anni, default_counts,
-                                            "Conteggi cumulati (n° sinistri)")
+                                            "Conteggi cumulati (n° sinistri)",modalita)
 
         if st.button("▶️ Esegui Frequency-Severity", type="primary"):
             cnt_array = build_triangle_from_session(count_data, n)
