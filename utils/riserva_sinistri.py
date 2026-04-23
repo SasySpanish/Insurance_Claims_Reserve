@@ -573,6 +573,76 @@ def backtest(
     }
 
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  7. FREQUENCY-SEVERITY
+# ══════════════════════════════════════════════════════════════════════════════
+
+def frequency_severity(
+    triangle_paid: np.ndarray,
+    triangle_counts: np.ndarray,
+    tipo_media: str = "volume",
+    tail_factor_paid: float = 1.0,
+    tail_factor_counts: float = 1.0,
+) -> dict:
+    """
+    Frequency-Severity Technique (Friedland Cap. 11 - Approccio 1).
+    
+    Proietta separatamente:
+    - Conteggi ultimati (chain ladder su triangle_counts)
+    - Severity ultimata (chain ladder su triangolo severity = paid/counts)
+    Ultimato F-S = conteggi ultimati × severity ultimata
+    """
+    n = triangle_paid.shape[0]
+    if triangle_counts.shape != triangle_paid.shape:
+        raise ValueError("I due triangoli devono avere la stessa dimensione.")
+
+    # Triangolo severity: paid / counts (solo celle valide)
+    triangle_severity = np.full_like(triangle_paid, np.nan)
+    for i in range(n):
+        for j in range(n):
+            p = triangle_paid[i, j]
+            c = triangle_counts[i, j]
+            if not np.isnan(p) and not np.isnan(c) and c > 0:
+                triangle_severity[i, j] = p / c
+
+    # Chain Ladder separato su conteggi e severity
+    cl_counts = chain_ladder(triangle_counts, tipo_media=tipo_media,
+                              tail_factor=tail_factor_counts)
+    cl_severity = chain_ladder(triangle_severity, tipo_media=tipo_media,
+                                tail_factor=tail_factor_paid)
+
+    ultimati_counts = cl_counts["ultimati"]
+    ultimati_severity = cl_severity["ultimati"]
+    ultimati_fs = ultimati_counts * ultimati_severity
+
+    paid_diag = _diagonale_attuale(triangle_paid)
+    riserve = np.maximum(ultimati_fs - paid_diag, 0.0)
+
+    # Diagonale attuale severity (per confronto)
+    severity_diag = np.array([
+        triangle_severity[i, n - 1 - i]
+        if not np.isnan(triangle_severity[i, n - 1 - i]) else 0.0
+        for i in range(n)
+    ])
+    counts_diag = _diagonale_attuale(triangle_counts)
+
+    return {
+        "metodo": "Frequency-Severity",
+        "triangle_severity": triangle_severity,
+        "cl_counts": cl_counts,
+        "cl_severity": cl_severity,
+        "counts_diagonale": counts_diag,
+        "severity_diagonale": severity_diag,
+        "ultimati_counts": ultimati_counts,
+        "ultimati_severity": ultimati_severity,
+        "ultimati": ultimati_fs,
+        "pagati_attuali": paid_diag,
+        "riserve_per_anno": riserve,
+        "riserva_totale": float(riserve.sum()),
+    }
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  HELPER: tabella riepilogativa riserve
 # ══════════════════════════════════════════════════════════════════════════════

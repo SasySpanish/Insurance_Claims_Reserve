@@ -16,6 +16,7 @@ from utils import (
     chain_ladder,
     bornhuetter_ferguson,
     cape_cod,
+    frequency_severity,
     average_cost_per_claim,
     tabella_riepilogo_riserve,
     build_development_triangle,
@@ -258,13 +259,14 @@ st.caption("Stima IBNR · Chain Ladder · Bornhuetter-Ferguson · Cape Cod · Ca
 
 # ── TABS ──────────────────────────────────────────────────────────────────────
 tabs = st.tabs([
-    "Δ Triangolo",
-    "Δ Chain Ladder",
-    "Δ Bornhuetter-Ferguson",
-    "Δ Cape Cod",
-    "Δ Avg Cost/Claim",
-    "Δ Case Outstanding",
-    "Δ Evaluation",
+    "🔋 Triangolo",
+    "🟢 Chain Ladder",
+    "🟢 Bornhuetter-Ferguson",
+    "🟢 Cape Cod",
+    "🟢 Avg Cost/Claim",
+    "🟢 Frequency-Severity"
+    "🟢 Case Outstanding",
+    "🟢 Evaluation 🔋",
 ])
 tab_input, tab_cl, tab_bf, tab_cc, tab_acpc, tab_co, tab_eval = tabs
 
@@ -720,6 +722,126 @@ with tab_acpc:
                      color_discrete_sequence=[PALETTE[7]])
         fig.update_layout(height=320, **PLOTLY_LAYOUT)
         st.plotly_chart(fig, use_container_width=True)
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TAB F-S – FREQUENCY-SEVERITY
+# ══════════════════════════════════════════════════════════════════════════════
+with tab_fs:
+    st.subheader("📈 Frequency-Severity")
+    st.markdown("""
+    Proietta separatamente **frequenza** (conteggi sinistri) e **severità**
+    (costo medio), poi combina: Ultimato = Conteggi ultimati × Severità ultimata.
+    Richiede un secondo triangolo con i conteggi cumulati.
+    """)
+
+    if "triangle" not in st.session_state:
+        st.warning("⚠️ Prima inserisci e salva il triangolo dei pagamenti nella tab **Triangolo**.")
+    else:
+        tri_paid = st.session_state["triangle"]
+        anni = st.session_state["anni_label"]
+        n = st.session_state["n_anni"]
+
+        col_fs1, col_fs2, col_fs3 = st.columns(3)
+        tipo_media_fs = col_fs1.selectbox(
+            "Tipo di media fattori",
+            ["volume", "semplice", "mediana", "ultimi3"],
+            format_func=lambda x: {"volume": "Volume-weighted", "semplice": "Semplice",
+                                    "mediana": "Mediana", "ultimi3": "Ultimi 3 anni"}[x],
+            key="tipo_media_fs",
+        )
+        tail_paid_fs = col_fs2.number_input("Tail factor pagamenti", min_value=1.0,
+                                             max_value=2.0, value=1.0, step=0.005,
+                                             format="%.4f", key="tail_paid_fs")
+        tail_cnt_fs = col_fs3.number_input("Tail factor conteggi", min_value=1.0,
+                                            max_value=2.0, value=1.0, step=0.005,
+                                            format="%.4f", key="tail_cnt_fs")
+
+        st.markdown("**Triangolo conteggi sinistri cumulati (n° sinistri)**")
+        DEMO_COUNTS = {
+            5: [
+                [120, 175, 188, 193, 195],
+                [115, 168, 181, 187, np.nan],
+                [125, 180, 194, np.nan, np.nan],
+                [130, 188, np.nan, np.nan, np.nan],
+                [135, np.nan, np.nan, np.nan, np.nan],
+            ],
+        }
+        default_counts = DEMO_COUNTS.get(n, [[None] * n for _ in range(n)])
+        count_data = render_triangle_input("fs_cnt", n, anni, default_counts,
+                                            "Conteggi cumulati (n° sinistri)")
+
+        if st.button("▶️ Esegui Frequency-Severity", type="primary"):
+            cnt_array = build_triangle_from_session(count_data, n)
+            try:
+                res_fs = frequency_severity(tri_paid, cnt_array,
+                                             tipo_media=tipo_media_fs,
+                                             tail_factor_paid=tail_paid_fs,
+                                             tail_factor_counts=tail_cnt_fs)
+                st.session_state["res_fs"] = res_fs
+            except Exception as e:
+                st.error(f"Errore: {e}")
+
+        if "res_fs" in st.session_state:
+            res = st.session_state["res_fs"]
+
+            k1, k2, k3 = st.columns(3)
+            k1.metric("🟢 Riserva Totale F-S", f"€ {res['riserva_totale']:,.0f}")
+            k2.metric("Conteggi ultimati totali", f"{res['ultimati_counts'].sum():,.0f}")
+            k3.metric("Severity media ultimata", f"€ {res['ultimati_severity'].mean():,.0f}")
+
+            st.divider()
+
+            # Tabella separata frequenza e severità
+            col_f, col_s = st.columns(2)
+            with col_f:
+                st.markdown("**Proiezione Frequenza (conteggi)**")
+                df_freq = pd.DataFrame({
+                    "Anno": anni,
+                    "Conteggi attuali": [f"{v:.0f}" for v in res["counts_diagonale"]],
+                    "Conteggi ultimati": [f"{v:.0f}" for v in res["ultimati_counts"]],
+                    "IBNR conteggi": [
+                        f"{max(0, u - a):.0f}"
+                        for u, a in zip(res["ultimati_counts"], res["counts_diagonale"])
+                    ],
+                })
+                st.dataframe(df_freq, use_container_width=True, hide_index=True)
+
+            with col_s:
+                st.markdown("**Proiezione Severità (costo medio)**")
+                df_sev = pd.DataFrame({
+                    "Anno": anni,
+                    "Severity attuale (€)": [f"€ {v:,.0f}" for v in res["severity_diagonale"]],
+                    "Severity ultimata (€)": [f"€ {v:,.0f}" for v in res["ultimati_severity"]],
+                })
+                st.dataframe(df_sev, use_container_width=True, hide_index=True)
+
+            st.divider()
+            st.markdown("**Riepilogo F-S per anno**")
+            df_fs = pd.DataFrame({
+                "Anno": anni,
+                "Conteggi ult.": [f"{v:.0f}" for v in res["ultimati_counts"]],
+                "Severity ult. (€)": [f"€ {v:,.0f}" for v in res["ultimati_severity"]],
+                "Ultimato F-S (€)": [f"€ {v:,.0f}" for v in res["ultimati"]],
+                "Pagato attuale (€)": [f"€ {v:,.0f}" for v in res["pagati_attuali"]],
+                "Riserva F-S (€)": [f"€ {v:,.0f}" for v in res["riserve_per_anno"]],
+            })
+            st.dataframe(df_fs, use_container_width=True, hide_index=True)
+
+            fig_fs = go.Figure()
+            fig_fs.add_trace(go.Bar(name="Pagato attuale", x=anni,
+                                     y=res["pagati_attuali"].tolist(),
+                                     marker_color=PALETTE[2]))
+            fig_fs.add_trace(go.Bar(name="Riserva F-S", x=anni,
+                                     y=res["riserve_per_anno"].tolist(),
+                                     marker_color=PALETTE[0]))
+            fig_fs.update_layout(barmode="stack",
+                                  title="Pagato + Riserva F-S per Anno",
+                                  xaxis_title="Anno Accadimento",
+                                  yaxis_title="€", height=350, **PLOTLY_LAYOUT)
+            st.plotly_chart(fig_fs, use_container_width=True)
+
 
 
 # ══════════════════════════════════════════════════════════════════════════════

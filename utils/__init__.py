@@ -11,6 +11,7 @@ from .riserva_sinistri import (
     bornhuetter_ferguson,
     cape_cod,
     average_cost_per_claim,
+    frequency_severity,
     tabella_riepilogo_riserve,
     build_development_triangle,
 )
