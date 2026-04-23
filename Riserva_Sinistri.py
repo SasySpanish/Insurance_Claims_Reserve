@@ -268,7 +268,7 @@ tabs = st.tabs([
     "🟢 Case Outstanding",
     "🟢 Evaluation 🔋",
 ])
-tab_input, tab_cl, tab_bf, tab_cc, tab_acpc, tab_co, tab_eval = tabs
+tab_input, tab_cl, tab_bf, tab_cc, tab_acpc, tab_fs, tab_co, tab_eval = tabs
 
 
 # ══════════════════════════════════════════════════════════════════════════════
