@@ -1056,7 +1056,7 @@ with tab_eval:
                                     "mediana": "Mediana", "ultimi3": "Ultimi 3"}[x],
             key="tipo_media_bt",
         )
-        lr_bt = col_bt3.number_input("LR per BF/CC (%)", 50.0, 120.0, 70.0,
+        lr_bt = col_bt3.number_input("LR per BF/CC (%)", 50.0, 120.0, 90.0,
                                       step=1.0, key="lr_bt") / 100
 
         usa_premi_bt = st.checkbox("Usa premi BF/CC già inseriti (se disponibili)", value=True)
