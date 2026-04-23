@@ -255,7 +255,7 @@ def render_triangle_input(key_prefix: str, n: int, anni_label: list,
 
 # ── HEADER ────────────────────────────────────────────────────────────────────
 st.title(" **⧨** Riserva Sinistri **⧩** ")
-st.caption("Stima IBNR · Chain Ladder · Bornhuetter-Ferguson · Cape Cod · Frequency-Severity · Case Outstanding · Evaluation & Backtest")
+st.caption("Stima IBNR · Chain Ladder · Bornhuetter-Ferguson · Cape Cod · ACPC · Frequency-Severity · Case Outstanding · Evaluation & Backtest")
 
 # ── TABS ──────────────────────────────────────────────────────────────────────
 tabs = st.tabs([
@@ -263,7 +263,7 @@ tabs = st.tabs([
     "🟢 **Chain Ladder** ",
     "🟢 **Bornhuetter-Ferguson** ",
     "🟢 **Cape Cod** ",
-    "🟢 **Avg Cost/Claim** ",
+    "🟢 **ACPC** ",
     "🟢 **Frequency-Severity** ",
     "🟢 **Case Outstanding** ",
     "🟢 **Evaluation** ",
