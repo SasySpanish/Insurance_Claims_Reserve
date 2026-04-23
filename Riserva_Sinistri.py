@@ -31,7 +31,7 @@ from utils.riserva_sinistri import (
 )
 
 # ── CONFIGURAZIONE PAGINA ──────────────────────────────────────────────────────
-st.set_page_config(page_title="Riserva Sinistri", page_icon="https://img.icons8.com/?size=100&id=102562&format=png&color=000000", layout="wide")
+st.set_page_config(page_title="Riserva Sinistri", page_icon="https://img.icons8.com/?size=100&id=15162&format=png&color=000000", layout="wide")
 
 # ── STILE GLOBALE ─────────────────────────────────────────────────────────────
 st.markdown("""
