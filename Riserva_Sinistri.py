@@ -264,7 +264,7 @@ tabs = st.tabs([
     "🟢 Bornhuetter-Ferguson",
     "🟢 Cape Cod",
     "🟢 Avg Cost/Claim",
-    "🟢 Frequency-Severity"
+    "🟢 Frequency-Severity",
     "🟢 Case Outstanding",
     "🟢 Evaluation 🔋",
 ])
