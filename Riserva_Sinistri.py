@@ -517,7 +517,7 @@ with tab_bf:
             premi_bf.append(p)
 
         lr = st.number_input("Loss Ratio atteso a priori (%)", min_value=1.0, max_value=200.0,
-                              value=70.0, step=0.5, key="lr_bf") / 100
+                              value=120.0, step=2.5, key="lr_bf") / 100
 
         if st.button("▶️ Esegui Bornhuetter-Ferguson", type="primary"):
             res_bf = bornhuetter_ferguson(tri, np.array(premi_bf), lr,
@@ -663,7 +663,7 @@ with tab_acpc:
 
     col_a, col_b = st.columns(2)
     costo_medio = col_a.number_input("Costo medio per sinistro (€)", 100.0, 500_000.0,
-                                      8_000.0, step=500.0)
+                                      1_000.0, step=500.0)
     inflazione = col_b.number_input("Inflazione annua (%)", 0.0, 20.0, 3.0, step=0.5)
 
     n_sin_acpc = []
