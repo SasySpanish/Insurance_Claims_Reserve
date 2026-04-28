@@ -1005,6 +1005,7 @@ with tab_co:
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB DIAGNOSTICA
 # ══════════════════════════════════════════════════════════════════════════════
+
 with tab_diag:
     st.subheader("🔬 Diagnostica Attuariale")
 
@@ -1105,6 +1106,19 @@ with tab_diag:
         titolo_report = col_r1.text_input("Titolo report",
                                            value="Report di Valutazione Riserve Sinistri")
         genera_pdf    = col_r2.checkbox("Includi PDF (richiede weasyprint)", value=False)
+        
+        if st.checkbox("Debug weasyprint", value=False):
+            try:
+                import weasyprint
+                st.success(f"weasyprint importato: versione {weasyprint.__version__}")
+                try:
+                    from weasyprint import HTML as WeasyprintHTML
+                    test_pdf = WeasyprintHTML(string="<p>test</p>").write_pdf()
+                    st.success(f"PDF generato correttamente ({len(test_pdf)} bytes)")
+                except Exception as e:
+                    st.error(f"Errore write_pdf: {e}")
+            except ImportError as e:
+                st.error(f"Import fallito: {e}")
 
         if st.button("📥 Genera Report", type="primary"):
             if ldf_sel is None:
