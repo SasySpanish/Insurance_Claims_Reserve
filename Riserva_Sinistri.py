@@ -29,7 +29,15 @@ from utils.riserva_sinistri import (
     stima_conteggi_da_triangolo,
     backtest,
 )
-
+from utils.diagnostica import (
+    select_ldf,
+    plot_development,
+    plot_ldf_comparison,
+    plot_paid_to_incurred,
+    plot_closure_rates,
+    detect_anomalies,
+    generate_evaluation_report,
+)
 # ── CONFIGURAZIONE PAGINA ──────────────────────────────────────────────────────
 st.set_page_config(page_title="Riserva Sinistri", page_icon="https://i.imgur.com/AJMWTYC.png", layout="wide")
 
@@ -266,9 +274,10 @@ tabs = st.tabs([
     "🟢 **ACPC** ",
     "🟢 **Frequency-Severity** ",
     "🟢 **Case Outstanding** ",
+    "🟢 **Diagnostica** ",
     "🟢 **Evaluation** ",
 ])
-tab_input, tab_cl, tab_bf, tab_cc, tab_acpc, tab_fs, tab_co, tab_eval = tabs
+tab_input, tab_cl, tab_bf, tab_cc, tab_acpc, tab_fs, tab_co, tab_diag, tab_eval = tabs
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -412,25 +421,79 @@ with tab_cl:
                                          value=1.0, step=0.005, format="%.4f", key="tail_cl")
 
         # Calcola fattori preliminari per mostrare la tabella dei link ratio
-        factors_auto = compute_factors(tri, tipo_media_cl)
-        ldf_mat = age_to_age_matrix(tri)
+        
+        # Opzioni selezione LDF
+        col_sel1, col_sel2, col_sel3 = st.columns(3)
+        ldf_method = col_sel1.selectbox(
+            "Metodo selezione LDF",
+            ["weighted", "all", "last3", "last5", "trimmed"],
+            format_func=lambda x: {
+                "weighted": "Volume-weighted",
+                "all":      "All-years",
+                "last3":    "Ultimi 3",
+                "last5":    "Ultimi 5",
+                "trimmed":  "All-years (no outlier)",
+            }[x],
+            key="ldf_method",
+        )
+        outlier_method_cl = col_sel2.selectbox(
+            "Metodo outlier",
+            ["iqr", "zscore"],
+            format_func=lambda x: {"iqr": "IQR", "zscore": "Z-score"}[x],
+            key="outlier_method_cl",
+        )
+        remove_out_cl = col_sel3.checkbox("Rimuovi outlier dal calcolo", value=True,
+                                           key="remove_out_cl")
 
+        # Anni da escludere manualmente
+        exclude_labels = st.multiselect(
+            "Escludi anni di accadimento (es. 2020 Covid)",
+            options=anni,
+            default=[],
+            key="exclude_years_cl",
+        )
+        exclude_idx = [anni.index(a) for a in exclude_labels if a in anni]
+
+        # Calcola selezione LDF
+        ldf_sel = select_ldf(
+            tri, anni,
+            method=ldf_method,
+            outlier_method=outlier_method_cl,
+            remove_outliers=remove_out_cl,
+            exclude_years=exclude_idx,
+            tail_factor=tail_cl,
+        )
+        st.session_state["ldf_sel"] = ldf_sel
+
+        # Tabella link ratio individuali
+        lrm = age_to_age_matrix(tri)
         st.markdown("**Link Ratio individuali (età-età)**")
         ldf_df = pd.DataFrame(
-            ldf_mat,
+            lrm,
             index=anni,
             columns=[f"{j}→{j+1}" for j in range(n - 1)],
         )
         st.dataframe(ldf_df.style.format("{:.4f}", na_rep="—"), use_container_width=True)
 
-        st.markdown("**Selezione fattori età-età** (modifica per override manuale)")
+        # Tabella riepilogativa medie
+        st.markdown("**Riepilogo medie LDF**")
+        st.dataframe(ldf_sel.summary, use_container_width=True, hide_index=True)
+
+        # Note diagnostiche
+        if ldf_sel.notes:
+            for note in ldf_sel.notes:
+                st.markdown(f'<div class="warning-box">⚠️ {note}</div>',
+                            unsafe_allow_html=True)
+
+        # Override manuale fattori
+        st.markdown("**Override manuale fattori (opzionale)**")
         factor_cols = st.columns(n - 1)
         fattori_manuali = []
         for j in range(n - 1):
             f = factor_cols[j].number_input(
                 f"{j}→{j+1}",
                 min_value=1.0, max_value=5.0,
-                value=float(round(factors_auto[j], 5)),
+                value=float(round(ldf_sel.selected[j], 5)),
                 step=0.001, format="%.4f",
                 key=f"f_cl_{j}",
             )
@@ -441,7 +504,6 @@ with tab_cl:
                                    fattori_manuali=np.array(fattori_manuali),
                                    tail_factor=tail_cl)
             st.session_state["res_cl"] = res_cl
-            st.session_state["fattori_cl_usati"] = fattori_manuali
 
         if "res_cl" in st.session_state:
             res = st.session_state["res_cl"]
@@ -937,6 +999,151 @@ with tab_co:
                          color_discrete_sequence=[PALETTE[5]])
             fig.update_layout(height=320, **PLOTLY_LAYOUT)
             st.plotly_chart(fig, use_container_width=True)
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TAB DIAGNOSTICA
+# ══════════════════════════════════════════════════════════════════════════════
+with tab_diag:
+    st.subheader("🔬 Diagnostica Attuariale")
+
+    if "triangle" not in st.session_state:
+        st.warning("⚠️ Prima inserisci e salva il triangolo nella tab **Triangolo**.")
+    else:
+        tri = st.session_state["triangle"]
+        anni = st.session_state["anni_label"]
+        n = st.session_state["n_anni"]
+        ldf_sel = st.session_state.get("ldf_sel", None)
+
+        # ── Sviluppo cumulato ─────────────────────────────────────────────────
+        st.markdown("### Sviluppo cumulato per Accident Year")
+        fig_dev, _ = plot_development(tri, anni)
+        fig_dev.update_layout(
+            plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+            font_color="#e0f2f1",
+        )
+        st.plotly_chart(fig_dev, use_container_width=True)
+
+        # ── Confronto LDF ─────────────────────────────────────────────────────
+        st.markdown("### Confronto medie LDF")
+        fig_ldf, df_ldf = plot_ldf_comparison(tri, anni, ldf_sel)
+        fig_ldf.update_layout(
+            plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+            font_color="#e0f2f1",
+        )
+        st.plotly_chart(fig_ldf, use_container_width=True)
+        st.dataframe(df_ldf.round(5), use_container_width=True, hide_index=True)
+
+        # ── Paid-to-Incurred (opzionale) ──────────────────────────────────────
+        st.markdown("### Paid-to-Incurred Ratio (opzionale)")
+        st.caption("Richiede il triangolo degli incurred (pagato + riservato di testa).")
+        use_pi = st.checkbox("Inserisci triangolo Incurred", key="use_pi")
+        if use_pi:
+            default_incurred = [[None] * n for _ in range(n)]
+            incurred_data = render_triangle_input("incurred", n, anni,
+                                                   default_incurred, "Incurred cumulati (€)")
+            if st.button("📊 Calcola Paid/Incurred", key="btn_pi"):
+                incurred_arr = build_triangle_from_session(incurred_data, n)
+                fig_pi, _ = plot_paid_to_incurred(tri, incurred_arr, anni)
+                fig_pi.update_layout(
+                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                    font_color="#e0f2f1",
+                )
+                st.plotly_chart(fig_pi, use_container_width=True)
+                st.session_state["triangle_incurred"] = incurred_arr
+
+        # ── Closure rates (opzionale) ──────────────────────────────────────────
+        st.markdown("### Closure Rate (opzionale)")
+        st.caption("Richiede triangolo sinistri chiusi e triangolo sinistri denunciati.")
+        use_cr = st.checkbox("Inserisci triangoli chiusi / denunciati", key="use_cr")
+        if use_cr:
+            col_cr1, col_cr2 = st.columns(2)
+            with col_cr1:
+                closed_data = render_triangle_input("closed", n, anni,
+                                                     [[None]*n]*n, "Sinistri chiusi")
+            with col_cr2:
+                reported_data = render_triangle_input("reported", n, anni,
+                                                       [[None]*n]*n, "Sinistri denunciati")
+            if st.button("📊 Calcola Closure Rate", key="btn_cr"):
+                closed_arr   = build_triangle_from_session(closed_data, n)
+                reported_arr = build_triangle_from_session(reported_data, n)
+                fig_cr, _ = plot_closure_rates(closed_arr, reported_arr, anni)
+                fig_cr.update_layout(
+                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                    font_color="#e0f2f1",
+                )
+                st.plotly_chart(fig_cr, use_container_width=True)
+                st.session_state["triangle_closed"]   = closed_arr
+                st.session_state["triangle_reported"] = reported_arr
+
+        # ── Anomalie ──────────────────────────────────────────────────────────
+        st.markdown("### Anomalie di sviluppo")
+        out_m = st.selectbox("Metodo outlier", ["iqr", "zscore"],
+                              format_func=lambda x: x.upper(), key="diag_out_m")
+        anom = detect_anomalies(tri, anni, outlier_method=out_m)
+        st.session_state["anomalie"] = anom
+
+        st.dataframe(anom["summary"], use_container_width=True, hide_index=True)
+
+        if anom["anomalous_years"]:
+            st.markdown(f'<div class="warning-box">⚠️ Anni anomali: '
+                        f'{anom["anomalous_years"]}</div>', unsafe_allow_html=True)
+        if anom["unstable_cols"]:
+            st.markdown("**Intervalli instabili (CV > 10%)**")
+            st.dataframe(pd.DataFrame(anom["unstable_cols"]),
+                         use_container_width=True, hide_index=True)
+        if anom["outlier_cells"]:
+            st.markdown("**LDF outlier individuali**")
+            st.dataframe(pd.DataFrame(anom["outlier_cells"]),
+                         use_container_width=True, hide_index=True)
+
+        # ── Report ────────────────────────────────────────────────────────────
+        st.divider()
+        st.markdown("### 📄 Genera Report")
+        col_r1, col_r2 = st.columns(2)
+        titolo_report = col_r1.text_input("Titolo report",
+                                           value="Report di Valutazione Riserve Sinistri")
+        genera_pdf    = col_r2.checkbox("Includi PDF (richiede weasyprint)", value=False)
+
+        if st.button("📥 Genera Report", type="primary"):
+            if ldf_sel is None:
+                st.warning("Esegui prima la selezione LDF nel tab Chain Ladder.")
+            else:
+                riserve = [
+                    st.session_state[k]
+                    for k in ["res_cl", "res_bf", "res_cc", "res_fs", "res_co"]
+                    if k in st.session_state
+                ]
+                with st.spinner("Generazione report in corso..."):
+                    html_bytes, pdf_bytes = generate_evaluation_report(
+                        triangle=tri,
+                        anni_label=anni,
+                        ldf_selection=ldf_sel,
+                        riserve_risultati=riserve or None,
+                        anomalie=st.session_state.get("anomalie"),
+                        triangle_incurred=st.session_state.get("triangle_incurred"),
+                        triangle_closed=st.session_state.get("triangle_closed"),
+                        triangle_reported=st.session_state.get("triangle_reported"),
+                        titolo=titolo_report,
+                        produrre_pdf=genera_pdf,
+                    )
+
+                st.download_button(
+                    "⬇️ Scarica Report HTML",
+                    data=html_bytes,
+                    file_name="report_riserve.html",
+                    mime="text/html",
+                )
+                if pdf_bytes:
+                    st.download_button(
+                        "⬇️ Scarica Report PDF",
+                        data=pdf_bytes,
+                        file_name="report_riserve.pdf",
+                        mime="application/pdf",
+                    )
+                elif genera_pdf:
+                    st.warning("PDF non generato: weasyprint non disponibile nell'ambiente.")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
