@@ -1105,10 +1105,10 @@ with tab_diag:
         st.markdown("### 📄 Genera Report")
         col_r1, col_r2 = st.columns(2)
         titolo_report = col_r1.text_input("Titolo report",
-                                           value="Report di Valutazione Riserve Sinistri")
-        genera_pdf    = col_r2.checkbox("Includi PDF (richiede weasyprint)", value=False)
+                                           value="Report di Diagnostica Riserve Sinistri")
+        genera_pdf    = col_r2.checkbox("Includi PDF ", value=False)
         
-        if st.checkbox("Debug weasyprint", value=False):
+        if st.checkbox("Debug", value=False):
             try:
                 import weasyprint
                 st.success(f"weasyprint importato: versione {weasyprint.__version__}")
@@ -1121,7 +1121,7 @@ with tab_diag:
             except ImportError as e:
                 st.error(f"Import fallito: {e}")
 
-        if st.button("📥 Genera Report", type="primary"):
+        if st.button("Genera Report", type="primary"):
             if ldf_sel is None:
                 st.warning("Esegui prima la selezione LDF nel tab Chain Ladder.")
             else:
