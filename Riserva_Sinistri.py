@@ -1145,14 +1145,14 @@ with tab_diag:
                     )
 
                 st.download_button(
-                    "⬇️ Scarica Report HTML",
+                    "⬇️ Download HTML",
                     data=html_bytes,
                     file_name="report_diagnostica.html",
                     mime="text/html",
                 )
                 if pdf_bytes:
                     st.download_button(
-                        "⬇️ Scarica Report PDF",
+                        "⬇️ Download PDF",
                         data=pdf_bytes,
                         file_name="report_diagnostica.pdf",
                         mime="application/pdf",
