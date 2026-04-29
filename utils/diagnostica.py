@@ -721,6 +721,619 @@ def generate_evaluation_report(
     return html_bytes, pdf_bytes
 
 
+def generate_evaluation_report_full(
+    triangle: np.ndarray,
+    anni_label: list[str],
+    riserve_risultati: list[dict],
+    backtest_result: Optional[dict] = None,
+    ldf_selection: Optional[LDFSelection] = None,
+    titolo: str = "Report di Valutazione Riserve — Evaluation",
+    produrre_pdf: bool = False,
+) -> tuple[bytes, Optional[bytes]]:
+    """
+    Report di Evaluation scaricabile: confronto metodi, grafici, back-test.
+    Separato dal report diagnostica. Stile consulenziale scuro/teal.
+    """
+    from datetime import date
+
+    # ── CSS ───────────────────────────────────────────────────────────────────
+    css = """
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: 'DM Sans', sans-serif;
+        background: #0d3d4a;
+        color: #e0f2f1;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      /* ── Header ── */
+      .report-header {
+        background: linear-gradient(135deg, #071e2b 0%, #0a2f3a 60%, #0d3d4a 100%);
+        padding: 48px 64px 40px;
+        border-bottom: 2px solid #00897b;
+        position: relative;
+      }
+      .report-header::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #00897b, #4db6ac, #80cbc4, #4db6ac, #00897b);
+      }
+      .report-header h1 {
+        font-size: 2rem;
+        font-weight: 600;
+        color: #b2dfdb;
+        letter-spacing: -0.5px;
+        margin-bottom: 8px;
+      }
+      .report-header .meta {
+        color: rgba(178,223,219,0.6);
+        font-size: 0.82rem;
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .report-header .meta span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .badge {
+        display: inline-block;
+        background: rgba(0,137,123,0.25);
+        border: 1px solid rgba(128,203,196,0.3);
+        border-radius: 20px;
+        padding: 2px 10px;
+        font-size: 0.75rem;
+        color: #80cbc4;
+        margin-left: 8px;
+      }
+
+      /* ── Navigazione sezioni ── */
+      .toc {
+        background: #0a2a3a;
+        border-left: 3px solid #00897b;
+        padding: 20px 32px;
+        margin: 0;
+      }
+      .toc h3 { color: #80cbc4; font-size: 0.78rem; text-transform: uppercase;
+                letter-spacing: 1px; margin-bottom: 10px; }
+      .toc ol { padding-left: 18px; color: #4db6ac; font-size: 0.85rem; }
+      .toc li { margin-bottom: 4px; }
+
+      /* ── Sezione ── */
+      section {
+        padding: 40px 64px;
+        border-bottom: 1px solid rgba(128,203,196,0.1);
+      }
+      section:nth-child(even) {
+        background: rgba(10,42,58,0.4);
+      }
+
+      h2 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #80cbc4;
+        letter-spacing: 0.3px;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(128,203,196,0.2);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      h2 .section-num {
+        background: linear-gradient(135deg, #00897b, #00695c);
+        color: white;
+        border-radius: 50%;
+        width: 28px; height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.78rem;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+
+      h3 {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #4db6ac;
+        margin: 20px 0 10px;
+      }
+
+      p { color: #b2dfdb; margin-bottom: 10px; }
+
+      /* ── KPI cards ── */
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .kpi-card {
+        background: rgba(0,137,123,0.12);
+        border: 1px solid rgba(128,203,196,0.2);
+        border-radius: 12px;
+        padding: 16px 20px;
+        text-align: center;
+      }
+      .kpi-label {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: #80cbc4;
+        margin-bottom: 6px;
+      }
+      .kpi-value {
+        font-family: 'DM Mono', monospace;
+        font-size: 1.2rem;
+        font-weight: 500;
+        color: #e0f2f1;
+      }
+      .kpi-delta {
+        font-size: 0.75rem;
+        color: #4db6ac;
+        margin-top: 4px;
+      }
+
+      /* ── Tabelle ── */
+      .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: 'DM Mono', monospace;
+        font-size: 0.8rem;
+        margin: 16px 0;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .report-table thead tr {
+        background: linear-gradient(135deg, #00695c, #00897b);
+      }
+      .report-table th {
+        padding: 10px 14px;
+        text-align: left;
+        color: #e0f2f1;
+        font-weight: 500;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.78rem;
+        letter-spacing: 0.3px;
+      }
+      .report-table td {
+        padding: 9px 14px;
+        border-bottom: 1px solid rgba(128,203,196,0.1);
+        color: #b2dfdb;
+      }
+      .report-table tr:nth-child(even) td {
+        background: rgba(0,137,123,0.06);
+      }
+      .report-table tr:last-child td {
+        background: rgba(0,137,123,0.18);
+        color: #e0f2f1;
+        font-weight: 600;
+        border-bottom: none;
+      }
+
+      /* ── Alert box ── */
+      .alert {
+        border-radius: 10px;
+        padding: 14px 18px;
+        margin: 16px 0;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .alert-warning {
+        background: rgba(255,160,0,0.1);
+        border: 1px solid rgba(255,160,0,0.3);
+        color: #ffcc80;
+      }
+      .alert-ok {
+        background: rgba(0,137,123,0.12);
+        border: 1px solid rgba(128,203,196,0.25);
+        color: #80cbc4;
+      }
+      .alert-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+      /* ── Grafici ── */
+      .chart-container {
+        background: rgba(7,30,43,0.5);
+        border: 1px solid rgba(128,203,196,0.15);
+        border-radius: 12px;
+        padding: 4px;
+        margin: 16px 0;
+        overflow: hidden;
+      }
+      .chart-container img {
+        width: 100%;
+        border-radius: 10px;
+        display: block;
+      }
+      .chart-caption {
+        font-size: 0.75rem;
+        color: rgba(128,203,196,0.6);
+        text-align: center;
+        padding: 6px 0 2px;
+      }
+
+      /* ── Note LDF ── */
+      .note-list { list-style: none; padding: 0; }
+      .note-list li {
+        padding: 8px 12px;
+        border-left: 3px solid #00897b;
+        background: rgba(0,137,123,0.08);
+        margin-bottom: 6px;
+        border-radius: 0 6px 6px 0;
+        color: #b2dfdb;
+        font-size: 0.83rem;
+      }
+
+      /* ── Footer ── */
+      .report-footer {
+        background: #071e2b;
+        padding: 24px 64px;
+        text-align: center;
+        color: rgba(128,203,196,0.4);
+        font-size: 0.75rem;
+        border-top: 1px solid rgba(128,203,196,0.1);
+      }
+
+      /* ── Spread indicator ── */
+      .spread-bar {
+        height: 6px;
+        border-radius: 3px;
+        background: rgba(128,203,196,0.15);
+        margin: 8px 0;
+        overflow: hidden;
+      }
+      .spread-fill {
+        height: 100%;
+        border-radius: 3px;
+        background: linear-gradient(90deg, #00897b, #4db6ac);
+      }
+    </style>
+    """
+
+    # ── Palette grafici (sfondo scuro per report) ──────────────────────────────
+    DARK_LAYOUT = dict(
+        plot_bgcolor="#0a2a3a",
+        paper_bgcolor="#0a2a3a",
+        font_color="#e0f2f1",
+        font_family="DM Sans",
+        xaxis=dict(gridcolor="rgba(128,203,196,0.1)", zerolinecolor="rgba(128,203,196,0.15)"),
+        yaxis=dict(gridcolor="rgba(128,203,196,0.1)", zerolinecolor="rgba(128,203,196,0.15)"),
+        legend=dict(bgcolor="rgba(7,30,43,0.8)", bordercolor="rgba(128,203,196,0.2)", borderwidth=1),
+    )
+    PAL = ["#80cbc4", "#4db6ac", "#26a69a", "#00897b", "#00695c",
+           "#b2dfdb", "#26c6da", "#0097a7", "#006064", "#e0f2f1"]
+
+    sections = []
+
+    # ── Header ────────────────────────────────────────────────────────────────
+    n_metodi = len(riserve_risultati)
+    totali = [r.get("riserva_totale", 0) for r in riserve_risultati]
+    riserva_min = min(totali) if totali else 0
+    riserva_max = max(totali) if totali else 0
+    spread_pct = (riserva_max - riserva_min) / riserva_max * 100 if riserva_max > 0 else 0
+
+    sections.append(f"""
+    <div class="report-header">
+      <h1>{titolo}</h1>
+      <div class="meta">
+        <span>• Data: {date.today().strftime("%d/%m/%Y")}</span>
+        <span>• Triangolo: {triangle.shape[0]}×{triangle.shape[0]}</span>
+        <span>• Metodi eseguiti: {n_metodi}</span>
+        <span>• Anni: {anni_label[0]}–{anni_label[-1]}</span>
+      </div>
+    </div>
+    """)
+
+    # ── Indice ────────────────────────────────────────────────────────────────
+    toc_items = [
+        "Sintesi Riserve per Metodo",
+        "Confronto Riserve per Anno",
+        "Analisi dello Spread",
+        "LDF Selezionati" if ldf_selection else None,
+        "Back-test Retrospettivo" if backtest_result else None,
+    ]
+    toc_html = "".join(
+        f"<li>{item}</li>" for item in toc_items if item
+    )
+    sections.append(f"""
+    <div class="toc">
+      <h3>Contenuto del Report</h3>
+      <ol>{toc_html}</ol>
+    </div>
+    """)
+
+    # ── 1. Sintesi KPI + tabella ───────────────────────────────────────────────
+    kpi_cards = "".join(f"""
+      <div class="kpi-card">
+        <div class="kpi-label">{r['metodo']}</div>
+        <div class="kpi-value">€ {r['riserva_totale']:,.0f}</div>
+      </div>
+    """ for r in riserve_risultati)
+
+    n_anni = triangle.shape[0]
+    table_rows = ""
+    for i, anno in enumerate(anni_label):
+        cells = ""
+        for r in riserve_risultati:
+            rpp = r.get("riserve_per_anno", [])
+            v = rpp[i] if i < len(rpp) else 0.0
+            cells += f"<td>€ {v:,.0f}</td>"
+        table_rows += f"<tr><td><strong>{anno}</strong></td>{cells}</tr>"
+    # Riga totali
+    total_cells = "".join(
+        f"<td><strong>€ {r.get('riserva_totale', 0):,.0f}</strong></td>"
+        for r in riserve_risultati
+    )
+    table_rows += f"<tr><td><strong>TOTALE</strong></td>{total_cells}</tr>"
+    header_cells = "".join(f"<th>{r['metodo']}</th>" for r in riserve_risultati)
+
+    sections.append(f"""
+    <section>
+      <h2><span class="section-num">1</span> Sintesi Riserve per Metodo</h2>
+      <div class="kpi-grid">{kpi_cards}</div>
+      <table class="report-table">
+        <thead><tr><th>Anno</th>{header_cells}</tr></thead>
+        <tbody>{table_rows}</tbody>
+      </table>
+    </section>
+    """)
+
+    # ── 2. Grafico confronto per anno ─────────────────────────────────────────
+    fig_bar = go.Figure()
+    for idx, r in enumerate(riserve_risultati):
+        rpp = list(r.get("riserve_per_anno", []))
+        fig_bar.add_trace(go.Bar(
+            name=r["metodo"], x=anni_label, y=rpp,
+            marker_color=PAL[idx % len(PAL)],
+        ))
+    fig_bar.update_layout(
+        barmode="group",
+        title="Riserva IBNR per Anno e Metodo",
+        xaxis_title="Anno di Accadimento",
+        yaxis_title="Riserva (€)",
+        height=400, **DARK_LAYOUT,
+    )
+    img_bar = _fig_to_b64(fig_bar, height=400)
+
+    fig_tot = go.Figure(go.Bar(
+        x=[r["metodo"] for r in riserve_risultati],
+        y=[r.get("riserva_totale", 0) for r in riserve_risultati],
+        marker_color=PAL[:n_metodi],
+        text=[f"€ {r.get('riserva_totale',0):,.0f}" for r in riserve_risultati],
+        textposition="outside",
+        textfont=dict(color="#e0f2f1", size=11),
+    ))
+    fig_tot.update_layout(
+        title="Riserva Totale IBNR per Metodo",
+        yaxis_title="€",
+        height=380, **DARK_LAYOUT,
+    )
+    fig_tot.update_layout(yaxis=dict(
+        **DARK_LAYOUT["yaxis"],
+        range=[0, riserva_max * 1.18],
+    ))
+    img_tot = _fig_to_b64(fig_tot, height=380)
+
+    sections.append(f"""
+    <section>
+      <h2><span class="section-num">2</span> Confronto Riserve per Anno</h2>
+      <div class="chart-container">
+        <img src="data:image/png;base64,{img_bar}"/>
+        <div class="chart-caption">Confronto riserve IBNR per accident year e metodo</div>
+      </div>
+      <div class="chart-container">
+        <img src="data:image/png;base64,{img_tot}"/>
+        <div class="chart-caption">Riserva totale stimata per metodo</div>
+      </div>
+    </section>
+    """)
+
+    # ── 3. Analisi spread ─────────────────────────────────────────────────────
+    spread_class = "alert-warning" if spread_pct > 20 else "alert-ok"
+    spread_icon  = "⚠️" if spread_pct > 20 else "✅"
+    spread_msg   = (
+        "Spread elevato: le metodologie divergono significativamente. "
+        "Analizzare le cause prima di selezionare la stima finale."
+        if spread_pct > 20 else
+        "Le stime sono ragionevolmente coerenti tra loro."
+    )
+    fill_pct = min(spread_pct, 100)
+
+    metodi_sorted = sorted(riserve_risultati, key=lambda r: r.get("riserva_totale", 0))
+    range_rows = "".join(f"""
+      <tr>
+        <td>{r['metodo']}</td>
+        <td>€ {r.get('riserva_totale',0):,.0f}</td>
+        <td>€ {r.get('riserva_totale',0) - riserva_min:,.0f}</td>
+        <td>{(r.get('riserva_totale',0) - riserva_min)/riserva_max*100 if riserva_max>0 else 0:.1f}%</td>
+      </tr>
+    """ for r in metodi_sorted)
+
+    sections.append(f"""
+    <section>
+      <h2><span class="section-num">3</span> Analisi dello Spread</h2>
+      <div class="alert {spread_class}">
+        <span class="alert-icon">{spread_icon}</span>
+        <div>
+          <strong>Range: € {riserva_min:,.0f} — € {riserva_max:,.0f}
+          &nbsp;|&nbsp; Spread: € {riserva_max-riserva_min:,.0f} ({spread_pct:.1f}%)</strong><br/>
+          {spread_msg}
+        </div>
+      </div>
+      <div class="spread-bar"><div class="spread-fill" style="width:{fill_pct}%"></div></div>
+      <table class="report-table">
+        <thead><tr><th>Metodo</th><th>Riserva Totale</th><th>Δ dal minimo</th><th>% dal minimo</th></tr></thead>
+        <tbody>{range_rows}</tbody>
+      </table>
+    </section>
+    """)
+
+    # ── 4. LDF selezionati (se disponibili) ───────────────────────────────────
+    if ldf_selection is not None:
+        ldf_rows = ""
+        for _, row in ldf_selection.summary.iterrows():
+            ldf_rows += "<tr>" + "".join(f"<td>{v}</td>" for v in row) + "</tr>"
+        ldf_headers = "".join(f"<th>{c}</th>" for c in ldf_selection.summary.columns)
+
+        notes_html = ""
+        if ldf_selection.notes:
+            items = "".join(f"<li>{n}</li>" for n in ldf_selection.notes)
+            notes_html = f"<ul class='note-list'>{items}</ul>"
+        else:
+            notes_html = '<p class="alert alert-ok"><span class="alert-icon">✅</span>Nessuna criticità rilevata nella selezione LDF.</p>'
+
+        sections.append(f"""
+        <section>
+          <h2><span class="section-num">4</span> LDF Selezionati</h2>
+          <p>
+            <strong>Metodo:</strong> {ldf_selection.method}
+            &nbsp;·&nbsp;
+            <strong>Outlier:</strong> {ldf_selection.outlier_method.upper()}
+            &nbsp;·&nbsp;
+            <strong>Anni esclusi:</strong>
+            {[anni_label[i] for i in ldf_selection.excluded_years] or 'nessuno'}
+          </p>
+          <table class="report-table">
+            <thead><tr>{ldf_headers}</tr></thead>
+            <tbody>{ldf_rows}</tbody>
+          </table>
+          <h3>Note diagnostiche</h3>
+          {notes_html}
+        </section>
+        """)
+
+    # ── 5. Back-test ──────────────────────────────────────────────────────────
+    if backtest_result is not None:
+        n_diag = backtest_result.get("n_diagonali_rimosse", 1)
+        bt_metodi = backtest_result.get("metodi", {})
+
+        # Grafico errori %
+        fig_err = go.Figure()
+        for idx, (nome, dati) in enumerate(bt_metodi.items()):
+            errs = [
+                v if not np.isnan(v) else 0
+                for v in dati["errori_pct"]
+            ]
+            fig_err.add_trace(go.Bar(
+                name=nome, x=anni_label, y=errs,
+                marker_color=PAL[idx % len(PAL)],
+            ))
+        fig_err.add_hline(y=0, line_dash="dash",
+                          line_color="rgba(255,255,255,0.3)")
+        fig_err.update_layout(
+            barmode="group",
+            title=f"Errore % per Anno e Metodo (diagonali rimosse: {n_diag})",
+            xaxis_title="Anno di Accadimento",
+            yaxis_title="Errore %",
+            height=380, **DARK_LAYOUT,
+        )
+        img_err = _fig_to_b64(fig_err, height=380)
+
+        # Tabella RMSE
+        rmse_rows = ""
+        for nome, dati in bt_metodi.items():
+            err_abs = np.array(dati["errori_assoluti"])
+            rmse = float(np.sqrt(np.nanmean(err_abs ** 2)))
+            bias = float(np.nanmean(err_abs))
+            rmse_rows += f"""
+            <tr>
+              <td>{nome}</td>
+              <td>€ {rmse:,.0f}</td>
+              <td>€ {bias:,.0f}</td>
+            </tr>"""
+
+        # Tabelle per metodo
+        bt_tables = ""
+        for nome, dati in bt_metodi.items():
+            rows = ""
+            for i, anno in enumerate(anni_label):
+                ep = dati["errori_pct"][i]
+                ep_str = f"{ep:.1f}%" if not np.isnan(ep) else "—"
+                rows += f"""<tr>
+                  <td>{anno}</td>
+                  <td>€ {dati['ultimati_proiettati'][i]:,.0f}</td>
+                  <td>€ {dati['ultimati_veri'][i]:,.0f}</td>
+                  <td>€ {dati['errori_assoluti'][i]:,.0f}</td>
+                  <td>{ep_str}</td>
+                </tr>"""
+            bt_tables += f"""
+            <h3>{nome}</h3>
+            <table class="report-table">
+              <thead><tr>
+                <th>Anno</th>
+                <th>Ultimato proiettato</th>
+                <th>Ultimato vero (proxy)</th>
+                <th>Errore assoluto</th>
+                <th>Errore %</th>
+              </tr></thead>
+              <tbody>{rows}</tbody>
+            </table>"""
+
+        sections.append(f"""
+        <section>
+          <h2><span class="section-num">{'5' if ldf_selection else '4'}</span>
+              Back-test Retrospettivo</h2>
+          <p>Diagonali rimosse: <strong>{n_diag}</strong>.
+             L'ultimato "vero" è il proxy dal triangolo completo.</p>
+          <div class="chart-container">
+            <img src="data:image/png;base64,{img_err}"/>
+            <div class="chart-caption">
+              Errore % per anno e metodo — positivo = sovrastima, negativo = sottostima
+            </div>
+          </div>
+          <h3>RMSE per metodo</h3>
+          <table class="report-table">
+            <thead><tr><th>Metodo</th><th>RMSE (€)</th><th>Bias medio (€)</th></tr></thead>
+            <tbody>{rmse_rows}</tbody>
+          </table>
+          {bt_tables}
+        </section>
+        """)
+
+    # ── Footer ────────────────────────────────────────────────────────────────
+    sections.append(f"""
+    <div class="report-footer">
+      Generato il {date.today().strftime("%d/%m/%Y")} &nbsp;·&nbsp;
+      Insurance Claims Reserve &nbsp;·&nbsp;
+      Friedland – Estimating Unpaid Claims Using Basic Techniques (CAS, 2010)
+    </div>
+    """)
+
+    html = f"""<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{titolo}</title>
+  {css}
+</head>
+<body>{''.join(sections)}</body>
+</html>"""
+
+    html_bytes = html.encode("utf-8")
+
+    pdf_bytes: Optional[bytes] = None
+    if produrre_pdf:
+        try:
+            from weasyprint import HTML as WeasyprintHTML
+            pdf_bytes = WeasyprintHTML(string=html).write_pdf()
+        except ImportError:
+            warnings.warn("weasyprint non installato.", stacklevel=2)
+        except Exception as exc:
+            warnings.warn(f"Generazione PDF fallita: {exc}", stacklevel=2)
+
+    return html_bytes, pdf_bytes
 # ══════════════════════════════════════════════════════════════════════════════
 #  ESEMPIO MINIMO DI UTILIZZO
 # ══════════════════════════════════════════════════════════════════════════════

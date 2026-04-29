@@ -37,6 +37,7 @@ from utils.diagnostica import (
     plot_closure_rates,
     detect_anomalies,
     generate_evaluation_report,
+    generate_evaluation_report_full,
 )
 # ── CONFIGURAZIONE PAGINA ──────────────────────────────────────────────────────
 st.set_page_config(page_title="Riserva Sinistri", page_icon="https://i.imgur.com/AJMWTYC.png", layout="wide")
@@ -268,12 +269,12 @@ st.caption("Stima IBNR · Chain Ladder · Bornhuetter-Ferguson · Cape Cod · AC
 # ── TABS ──────────────────────────────────────────────────────────────────────
 tabs = st.tabs([
     "🟢 **Triangolo** ",
-    "🟢 **Chain Ladder** ",
-    "🟢 **Bornhuetter-Ferguson** ",
-    "🟢 **Cape Cod** ",
+    "🟢 **C-L** ",
+    "🟢 **B-F** ",
+    "🟢 **C-C** ",
     "🟢 **ACPC** ",
-    "🟢 **Frequency-Severity** ",
-    "🟢 **Case Outstanding** ",
+    "🟢 **F-S** ",
+    "🟢 **C-O** ",
     "🟢 **Diagnostica** ",
     "🟢 **Evaluation** ",
 ])
@@ -791,7 +792,7 @@ with tab_acpc:
 # TAB F-S – FREQUENCY-SEVERITY
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_fs:
-    st.subheader("📈 Frequency-Severity")
+    st.subheader("Δ Frequency-Severity Δ")
     st.markdown("""
     Proietta separatamente **frequenza** (conteggi sinistri) e **severità**
     (costo medio), poi combina: Ultimato = Conteggi ultimati × Severità ultimata.
@@ -910,7 +911,7 @@ with tab_fs:
 # TAB 6 – CASE OUTSTANDING DEVELOPMENT
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_co:
-    st.subheader("🏛️ Case Outstanding Development")
+    st.subheader("Δ Case Outstanding Development Δ")
     st.markdown("""
     Metodo di Wiser: analizza il rapporto tra **pagamenti incrementali** e
     **riserve di testa** aperte all'inizio del periodo. Adatto a linee claims-made
@@ -1007,7 +1008,7 @@ with tab_co:
 # ══════════════════════════════════════════════════════════════════════════════
 
 with tab_diag:
-    st.subheader("🔬 Diagnostica Attuariale")
+    st.subheader("Δ Diagnostica Attuariale Δ")
 
     if "triangle" not in st.session_state:
         st.warning("⚠️ Prima inserisci e salva il triangolo nella tab **Triangolo**.")
@@ -1146,18 +1147,18 @@ with tab_diag:
                 st.download_button(
                     "⬇️ Scarica Report HTML",
                     data=html_bytes,
-                    file_name="report_riserve.html",
+                    file_name="report_diagnostica.html",
                     mime="text/html",
                 )
                 if pdf_bytes:
                     st.download_button(
                         "⬇️ Scarica Report PDF",
                         data=pdf_bytes,
-                        file_name="report_riserve.pdf",
+                        file_name="report_diagnostica.pdf",
                         mime="application/pdf",
                     )
                 elif genera_pdf:
-                    st.warning("PDF non generato: weasyprint non disponibile nell'ambiente.")
+                    st.warning("PDF non generato - eseguire debug.")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1375,3 +1376,56 @@ with tab_eval:
             il dato osservato nelle diagonali successive. Usare questo test come indicatore 
             relativo di stabilità tra metodi, non come misura assoluta di accuratezza.
             </div>""", unsafe_allow_html=True)
+        
+        # ── Report Evaluation ─────────────────────────────────────────────────
+        st.divider()
+        st.markdown("### 📄 Report di Evaluation")
+
+        col_re1, col_re2 = st.columns(2)
+        titolo_eval = col_re1.text_input(
+            "Titolo report",
+            value="Report di Valutazione Riserve Sinistri",
+            key="titolo_eval_report",
+        )
+        genera_pdf_eval = col_re2.checkbox(
+            "Includi PDF",
+            value=False,
+            key="pdf_eval",
+        )
+
+        if st.button("Genera Report Evaluation", type="primary", key="btn_eval_report"):
+            riserve_eval = [
+                st.session_state[k]
+                for k in ["res_cl", "res_bf", "res_cc", "res_fs", "res_acpc", "res_co"]
+                if k in st.session_state
+            ]
+            if not riserve_eval:
+                st.warning("Esegui almeno un metodo nelle tab precedenti.")
+            else:
+                with st.spinner("Generazione report in corso..."):
+                    html_bytes, pdf_bytes = generate_evaluation_report_full(
+                        triangle=st.session_state["triangle"],
+                        anni_label=st.session_state["anni_label"],
+                        riserve_risultati=riserve_eval,
+                        backtest_result=st.session_state.get("res_bt"),
+                        ldf_selection=st.session_state.get("ldf_sel"),
+                        titolo=titolo_eval,
+                        produrre_pdf=genera_pdf_eval,
+                    )
+                st.download_button(
+                    "⬇️ Scarica Report HTML",
+                    data=html_bytes,
+                    file_name="report_evaluation.html",
+                    mime="text/html",
+                    key="dl_eval_html",
+                )
+                if pdf_bytes:
+                    st.download_button(
+                        "⬇️ Scarica Report PDF",
+                        data=pdf_bytes,
+                        file_name="report_evaluation.pdf",
+                        mime="application/pdf",
+                        key="dl_eval_pdf",
+                    )
+                elif genera_pdf_eval:
+                    st.warning("PDF non generato - eseguire debug.")

@@ -23,5 +23,6 @@ from .diagnostica import (
     plot_closure_rates,
     detect_anomalies,
     generate_evaluation_report,
+    generate_evaluation_report_full,
     LDFSelection,
 )
