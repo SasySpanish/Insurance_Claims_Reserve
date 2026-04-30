@@ -748,7 +748,7 @@ def generate_evaluation_report_full(
         background: #0d3d4a;
         color: #e0f2f1;
         font-size: 14px;
-        line-height: 1.6;
+        line-height: 1.3;
       }
 
       /* ── Header ── */
@@ -817,7 +817,7 @@ def generate_evaluation_report_full(
       }
 
       h2 {
-        font-size: 1.1rem;
+        font-size: 1.0rem;
         font-weight: 600;
         color: #80cbc4;
         letter-spacing: 0.3px;
@@ -1305,8 +1305,9 @@ def generate_evaluation_report_full(
     sections.append(f"""
     <div class="report-footer">
       Generato il {date.today().strftime("%d/%m/%Y")} &nbsp;·&nbsp;
-      Insurance Claims Reserve &nbsp;·&nbsp;
-      Friedland – Estimating Unpaid Claims Using Basic Techniques (CAS, 2010)
+      Simulatore Riserve Sinistri &nbsp;·&nbsp;
+      Friedland – Estimating Unpaid Claims Using Basic Techniques (CAS, 2010) &nbsp;·&nbsp;
+      Made By: Salvatore Spagnuolo (@sasyspanish)
     </div>
     """)
 
