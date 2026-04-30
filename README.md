@@ -1,5 +1,5 @@
-# 📐 Insurance Claims Reserve
-
+# Insurance Claims Reserve Simulator 
+### [Link all'app](https://riservasinistribeta.streamlit.app/)
 **Applicazione Streamlit per il calcolo e la valutazione delle riserve sinistri IBNR**  
 Metodologie attuariali standard · Diagnostica · Report scaricabile
 
@@ -137,7 +137,7 @@ Metodo di sviluppo standard. I pagamenti futuri vengono proiettati moltiplicando
 
 ---
 
-### 📊 Bornhuetter-Ferguson (Capitolo 9 – Friedland)
+### Bornhuetter-Ferguson (Capitolo 9 – Friedland)
 
 Credibility blend tra chain ladder e perdita attesa a priori.
 
@@ -149,7 +149,7 @@ La credibilità assegnata all'esperienza reale cresce con la maturità dell'anno
 
 ---
 
-### 🎣 Cape Cod / Stanard-Buhlmann (Capitolo 10 – Friedland)
+### Cape Cod / Stanard-Buhlmann (Capitolo 10 – Friedland)
 
 Identico al BF nella struttura, ma l'ELR non è selezionato a priori: viene stimato direttamente dai dati.
 
@@ -161,7 +161,7 @@ Elimina la soggettività nella scelta dell'ELR. Include warning esplicito sull'i
 
 ---
 
-### 🔢 Average Cost per Claim / ACPC (Capitolo 11 – Friedland)
+### Average Cost per Claim / ACPC (Capitolo 11 – Friedland)
 
 ```
 Riserva = N° sinistri IBNR × Costo medio × (1 + inflazione)^t
@@ -183,7 +183,7 @@ Richiede un secondo triangolo con i conteggi cumulati dei sinistri. I due triang
 
 ---
 
-### 🏛️ Case Outstanding Development – Wiser (Capitolo 12 – Friedland)
+### Case Outstanding Development – Wiser (Capitolo 12 – Friedland)
 
 Analizza il rapporto tra pagamenti incrementali e riserve di testa aperte all'inizio del periodo.
 
@@ -195,7 +195,7 @@ I ratio medi per colonna vengono applicati alle riserve di testa correnti per st
 
 ---
 
-### 🔍 Evaluation & Back-test (Capitolo 15 – Friedland)
+### Evaluation & Back-test (Capitolo 15 – Friedland)
 
 Confronto multi-metodo e validazione retrospettiva.
 
@@ -377,5 +377,7 @@ utils/diagnostica.py
 
 ---
 
-> Progetto sviluppato come parte di un portfolio data science / AI engineering.  
-> Background: Laurea Magistrale in Statistica Attuariale · Esperienza in operazioni logistiche · Transizione verso ruoli data/AI.
+## Autore
+**[Salvatore Spagnuolo](https://github.com/SasySpanish)**  (@sasyspanish)
+
+---
